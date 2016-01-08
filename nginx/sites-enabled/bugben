@@ -2,14 +2,14 @@ server {
     listen 80;
     charset utf-8;
 
-    server_name  armstrongandgettybingo.com www.armstrongandgettybingo.com;
+    server_name  bugben.com www.bugben.com;                                     
 
     location /static {
-        alias /static/angrates;
+        alias /static/bugben;
     }
 
     location / {
-        proxy_pass http://angrates:8000;
+        proxy_pass http://bugben:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

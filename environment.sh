@@ -1,29 +1,31 @@
+#!/usr/bin/env bash
 
-
+# postgres
 docker volume create --name postgres-data
-docker volume create --name angrates-static
-
-
-
-# delete volumes? 
-
-
-
 docker run -d --name=postgres -v postgres-data:/var/lib/postgresql/data postgres:latest
-
-
 docker exec -i -t postgres createdb -U postgres angrates
+docker exec -i -t postgres createdb -U postgres bugben
 
 
+# angrates
 docker build -t angrates /opt/apps/angrates/
-
-docker run -d --name=angrates -v static:/usr/src/app/static_root --link=postgres -p 8000:8000 angrates
+docker volume create --name angrates-static
+docker run -d --name=angrates -v angrates-static:/usr/src/app/static_root --link=postgres -p 8000:8000 -e DB_NAME=angrates -e DB_USER=postgres -e DB_PASS=postgres -e DB_SERVICE=postgres -e DB_PORT=5432 angrates
 
 docker exec -i -t angrates /usr/src/app/manage.py collectstatic --noinput
 docker exec -i -t angrates /usr/src/app/manage.py migrate
 docker exec -i -t angrates /usr/src/app/manage.py refresh
 docker exec -i -t angrates /usr/src/app/manage.py restore
 
-createdb -U postgres angrates
 
+# bugben
+docker build -t bugben /opt/apps/bugben/
+docker volume create --name bugben-static
+docker run -d --name=bugben -v bugben-static:/usr/src/app/static_root --link postgres -p 8001:8000 -e DB_NAME=bugben -e DB_USER=postgres -e DB_PASS=postgres -e DB_SERVICE=postgres -e DB_PORT=5432 bugben
+docker exec -i -t angrates /usr/src/app/manage.py collectstatic --noinput
+docker exec -i -t angrates /usr/src/app/manage.py provision
+
+
+# nginx
 docker build -t nginx /opt/apps/production/nginx
+docker run -d --name=nginx --link=angrates --link=bugben -v bugben-static:/static/bugben -v angrates-static:/static/angrates -p 80:80 nginx
