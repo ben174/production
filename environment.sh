@@ -27,6 +27,19 @@ docker exec -i -t bugben /usr/src/app/manage.py migrate
 docker exec -i -t bugben /usr/src/app/manage.py provision
 
 
+# showertexts
+docker build -t showertexts /opt/apps/showertexts/
+docker volume create --name showertexts-static
+docker exec -i -t postgres createdb -U postgres showertexts
+# restore the db dump here
+docker run -d --name=showertexts -v showertexts-static:/usr/src/app/static_root --link postgres -p 8002:8000 -e DB_NAME=showertexts -e DB_USER=postgres -e DB_PASS=postgres -e DB_SERVICE=postgres -e DB_PORT=5432 -e REDDIT_PASSWORD=$REDDIT_PASSWORD -e REDDIT_SECRET=$REDDIT_SECRET -e TRIGGER_PASSWORD=$TRIGGER_PASSWORD -e TWILIO_SID=$TWILIO_SID -e TWILIO_TOKEN=$TWILIO_TOKEN showertexts
+docker exec -i -t showertexts /usr/src/app/manage.py collectstatic --noinput
+docker exec -i -t showertexts /usr/src/app/manage.py migrate
+
+
+
+
+
 # nginx
-docker build -t nginx /opt/apps/production/nginx
-docker run -d --name=nginx --link=angrates --link=bugben -v bugben-static:/static/bugben -v angrates-static:/static/angrates -p 80:80 nginx
+#docker run -d --name=nginx --link=angrates --link=bugben -v bugben-static:/static/bugben -v angrates-static:/static/angrates -p 80:80 nginx
+docker run -d --name=nginx --link=angrates --link=bugben -v bugben-static:/static/bugben -v angrates-static:/static/angrates -v showertexts-static:/static/showertexts -v /opt/apps/production/sites-enabled:/etc/nginx/conf.d -p 80:80 nginx
